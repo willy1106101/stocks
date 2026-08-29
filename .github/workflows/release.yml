@@ -24,8 +24,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
-          # 如果你有 requirements.txt，請取消下方註解來安裝主程式需要的套件（例如 yfinance）：
-          # pip install -r requirements.txt
+          pip install -r requirements.txt
 
       - name: 打包主程式與更新程式
         run: |
