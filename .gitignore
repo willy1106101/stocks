@@ -11,6 +11,7 @@ willyStocks/
 
 # Local user data.  This database can contain watchlists and FinMind tokens.
 market_room.db
+todo.txt
 
 # Updater downloads and temporary replacement files
 *.new
