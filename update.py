@@ -13,11 +13,20 @@ import argparse
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+try:
+    import tkinter as tk
+    from tkinter import messagebox, ttk
+except ImportError:  # Allows command-line use on Python installations without Tk.
+    tk = None
+    messagebox = None
+    ttk = None
 
 
 # Change this before releasing the application, e.g. "willy/stocks".
@@ -26,6 +35,62 @@ APPLICATION_NAME = "willyStocks.exe"
 VERSION_FILENAME = "version.json"
 GITHUB_API = "https://api.github.com/repos/{repository}/releases/latest"
 USER_AGENT = "willyStocks-updater/1.0"
+
+
+class UpdateProgress:
+    """Small native window that keeps users informed during an update."""
+
+    def __init__(self, enabled: bool = True):
+        self.root = None
+        self.label = None
+        if not enabled or tk is None or ttk is None:
+            return
+        try:
+            self.root = tk.Tk()
+            self.root.title("股票工具更新")
+            self.root.resizable(False, False)
+            self.root.attributes("-topmost", True)
+            self.root.protocol("WM_DELETE_WINDOW", lambda: None)
+            frame = ttk.Frame(self.root, padding=18)
+            frame.pack(fill="both", expand=True)
+            self.label = ttk.Label(frame, text="正在檢查更新…", width=38)
+            self.label.pack(pady=(0, 12))
+            bar = ttk.Progressbar(frame, mode="indeterminate", length=280)
+            bar.pack(fill="x")
+            bar.start(12)
+            self.root.update()
+        except tk.TclError:
+            self.root = None
+
+    def set_message(self, text: str) -> None:
+        print(text)
+        if self.root and self.label:
+            self.label.config(text=text)
+            self.root.update_idletasks()
+            self.root.update()
+
+    def info(self, text: str) -> None:
+        self.set_message(text)
+        if self.root and messagebox:
+            messagebox.showinfo("股票工具更新", text, parent=self.root)
+        self.close()
+
+    def error(self, text: str) -> None:
+        self.set_message(text)
+        if self.root and messagebox:
+            messagebox.showerror("股票工具更新", text, parent=self.root)
+        self.close()
+
+    def success(self, text: str) -> None:
+        self.set_message(text)
+        if self.root and messagebox:
+            messagebox.showinfo("股票工具更新", text, parent=self.root)
+        self.close()
+
+    def close(self) -> None:
+        if self.root:
+            self.root.destroy()
+            self.root = None
 
 
 def app_directory() -> Path:
@@ -93,9 +158,13 @@ def release_asset(release: dict, name: str) -> dict | None:
     return next((asset for asset in release.get("assets", []) if asset.get("name") == name), None)
 
 
-def update(target: Path, check_only: bool = False) -> int:
+def update(target: Path, check_only: bool = False, progress: UpdateProgress | None = None) -> int:
     if GITHUB_REPOSITORY.startswith("YOUR_GITHUB_"):
-        print("請先在 update.py 設定 GITHUB_REPOSITORY，例如：your-account/your-repository")
+        message = "請先在 update.py 設定 GITHUB_REPOSITORY，例如：your-account/your-repository"
+        if progress:
+            progress.error(message)
+        else:
+            print(message)
         return 2
 
     directory = target.parent
@@ -106,7 +175,11 @@ def update(target: Path, check_only: bool = False) -> int:
         raise RuntimeError("GitHub Release 沒有 tag_name。")
 
     if version_key(latest_version) <= version_key(current_version):
-        print(f"目前已是最新版：v{current_version}")
+        message = f"目前已是最新版：v{current_version}"
+        if progress:
+            progress.info(message)
+        else:
+            print(message)
         return 0
 
     print(f"發現新版：v{latest_version}（目前 v{current_version}）")
@@ -120,7 +193,10 @@ def update(target: Path, check_only: bool = False) -> int:
         raise RuntimeError(f"Release 找不到 {APPLICATION_NAME}。")
 
     temporary_file = target.with_suffix(target.suffix + ".new")
-    print("正在下載新版…")
+    if progress:
+        progress.set_message("正在下載新版…")
+    else:
+        print("正在下載新版…")
     download(asset["browser_download_url"], temporary_file)
 
     checksum_asset = release_asset(release, f"{APPLICATION_NAME}.sha256")
@@ -134,6 +210,8 @@ def update(target: Path, check_only: bool = False) -> int:
             raise RuntimeError("SHA-256 驗證失敗，已取消更新。")
 
     try:
+        if progress:
+            progress.set_message("正在安裝新版…")
         os.replace(temporary_file, target)
         (directory / VERSION_FILENAME).write_text(
             json.dumps({"version": latest_version}, ensure_ascii=False, indent=2) + "\n",
@@ -144,7 +222,12 @@ def update(target: Path, check_only: bool = False) -> int:
     finally:
         temporary_file.unlink(missing_ok=True)
 
-    print(f"更新完成：v{latest_version}")
+    message = f"更新完成：v{latest_version}。按「確定」啟動新版。"
+    if progress:
+        progress.success(message)
+    else:
+        print(message)
+    subprocess.Popen([str(target)], cwd=str(target.parent))
     return 0
 
 
@@ -171,12 +254,18 @@ def main() -> int:
     if not default_target.exists() and not getattr(sys, "frozen", False):
         default_target = app_directory() / "dist" / APPLICATION_NAME
 
+    progress = UpdateProgress(enabled=not args.check)
     try:
         if args.wait_pid:
+            progress.set_message("正在等待主程式關閉…")
             wait_for_process_exit(args.wait_pid)
-        return update((args.target or default_target).resolve(), args.check)
+        return update((args.target or default_target).resolve(), args.check, progress)
     except (RuntimeError, ValueError) as error:
-        print(f"更新失敗：{error}")
+        message = f"更新失敗：{error}"
+        if args.check:
+            print(message)
+        else:
+            progress.error(message)
         return 1
 
 

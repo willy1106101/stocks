@@ -93,12 +93,14 @@ python update.py
 可用 `python update.py --check` 只檢查是否有新版。若想讓使用者不需安裝 Python，可額外打包更新器：
 
 ```powershell
-python -m PyInstaller update.py --onefile --name update
+python -m PyInstaller update.py --onefile --noconsole --name update
 ```
 
 將 `update.exe`、`willyStocks.exe` 與 `version.json` 放在同一資料夾即可使用。也可在 Release 額外上傳 `willyStocks.exe.sha256`，更新器便會自動驗證下載檔案。
 
 主程式啟動後也會在背景檢查一次最新正式 Release。只有偵測到新版且同資料夾存在 `update.exe` 時，才會顯示更新確認視窗；使用者確認後才會下載與替換檔案。
+
+更新器會顯示「等待主程式關閉」、「正在下載新版」與「正在安裝新版」的進度視窗。成功或失敗時會顯示結果，成功後按確認會自動啟動新版程式。
 
 ## 專案結構
 
