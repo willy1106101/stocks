@@ -2,3 +2,5 @@
 
 #----- to exe command ----
 pyinstaller --noconsole --onefile --name="willyStocks" --icon="favicon.ico" --hidden-import=yfinance --hidden-import=twstock --hidden-import=pandas --collect-all twstock --add-data "dashboard.html;." --add-data "market_room.db;." desktop_app.py
+
+pyinstaller --noconsole --onefile --name="update" --icon="favicon.ico" update.py
