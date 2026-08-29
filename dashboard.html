@@ -483,6 +483,10 @@
                     @click="currentTab = 'fundamentals'; fetchFundamentals()">
                     財報基本面快篩
                 </button>
+                <button class="nav-tab-btn" :class="{ active: currentTab === 'search' }"
+                    @click="currentTab = 'search';">
+                    搜尋股票
+                </button>
             </div>
 
             <div>
@@ -498,27 +502,6 @@
                 style="height: 100%; display: flex; flex-direction: column; min-height: 0;">
                 <!-- 上方：全市場即時總覽 -->
                 <div class="section-title">全市場即時總覽 (自動輪播)</div>
-                <div class="input-group" style="margin-bottom: 10px; gap: 8px;">
-                    <input v-model="stockSearchQuery" @keyup.enter="searchStocks" placeholder="搜尋股票或 ETF 代號、名稱，例如：2330、台積電"
-                        style="width: min(420px, 100%); padding: 8px 12px;">
-                    <button class="btn-primary" @click="searchStocks" :disabled="isSearchingStocks">
-                        {{ isSearchingStocks ? '搜尋中...' : '搜尋' }}
-                    </button>
-                </div>
-                <div v-if="stockSearchResults.length" class="marquee-grid" style="margin-bottom: 10px;">
-                    <div class="card" v-for="stock in stockSearchResults" :key="stock.symbol"
-                        @click="selectStock(stock.symbol)" style="flex: none; padding: 9px;">
-                        <h3>{{ stock.name }} <span style="font-size: 0.72rem; color: #64748b;">({{ stock.symbol }})</span></h3>
-                        <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">{{ stock.type }}</div>
-                        <button class="btn-secondary" @click.stop="toggleWatchlist(stock.symbol)"
-                            style="width: 100%; margin-top: 7px; padding: 4px 8px; font-size: 0.75rem;">
-                            {{ isInWatchlist(stock.symbol) ? '− 移除自選' : '+ 加入自選' }}
-                        </button>
-                    </div>
-                </div>
-                <div v-else-if="hasSearchedStocks" style="font-size: 0.82rem; color: var(--text-muted); margin: -3px 0 10px;">
-                    找不到符合的台股或 ETF。
-                </div>
                 <div class="marquee-grid">
                     <div class="card" v-for="stock in marqueeStocks" :key="stock.symbol"
                         @click="selectStock(stock.symbol)" style="flex: none; padding: 10px;">
@@ -563,7 +546,8 @@
                         <div class="detail-panel" v-if="selectedStock">
                             <div class="detail-header">
                                 <h2>{{ selectedStock.name }} ({{ selectedStock.symbol }})</h2>
-                                <span style="font-size: 0.78rem; color: var(--accent-green);">● 資料來源：{{ selectedStock.data_source || 'Yahoo Finance' }}</span>
+                                <span style="font-size: 0.78rem; color: var(--accent-green);">● 資料來源：{{
+                                    selectedStock.data_source || 'Yahoo Finance' }}</span>
                             </div>
 
                             <!-- 輪播控制列 (含暫停/播放按鈕) -->
@@ -633,6 +617,114 @@
                                             style="background: #07090e; padding: 6px; border-radius: 6px; margin-top: 3px; flex-grow: 1; display: flex; align-items: center; border: 1px solid var(--card-border);">
                                             <canvas id="stockChart" style="max-height: 150px;"></canvas>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-show="currentTab=== 'search'">
+                <div class="input-group" style="margin-bottom: 10px; gap: 8px;">
+                    <input v-model="stockSearchQuery" @keyup.enter="searchStocks"
+                        placeholder="搜尋股票或 ETF 代號、名稱，例如：2330、台積電" style="width: min(420px, 100%); padding: 8px 12px;">
+                    <button class="btn-primary" @click="searchStocks" :disabled="isSearchingStocks">
+                        {{ isSearchingStocks ? '搜尋中...' : '搜尋' }}
+                    </button>
+                </div>
+                <div v-if="stockSearchResults.length" class="marquee-grid" style="margin-bottom: 10px;">
+                    <div class="card" v-for="stock in stockSearchResults" :key="stock.symbol"
+                        @click="selectStock(stock.symbol)" style="flex: none; padding: 9px;">
+                        <h3>{{ stock.name }} <span style="font-size: 0.72rem; color: #64748b;">({{ stock.symbol
+                                }})</span></h3>
+                        <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">{{ stock.type }}
+                        </div>
+                        <button class="btn-secondary" @click.stop="toggleWatchlist(stock.symbol)"
+                            style="width: 100%; margin-top: 7px; padding: 4px 8px; font-size: 0.75rem;">
+                            {{ isInWatchlist(stock.symbol) ? '− 移除自選' : '+ 加入自選' }}
+                        </button>
+                    </div>
+                </div>
+                <div v-else-if="hasSearchedStocks"
+                    style="font-size: 0.82rem; color: var(--text-muted); margin: -3px 0 10px;">
+                    找不到符合的台股或 ETF。
+                </div>
+
+                <!-- 右邊：即時監控與動態追蹤詳細資訊輪播看板 -->
+                <div style="display: flex; flex-direction: column; min-height: 0;">
+                    <div class="section-title" style="border-left-color: #3b82f6;">詳細資訊輪播看板</div>
+                    <div class="detail-panel" v-if="selectedStock">
+                        <div class="detail-header">
+                            <h2>{{ selectedStock.name }} ({{ selectedStock.symbol }})</h2>
+                            <span style="font-size: 0.78rem; color: var(--accent-green);">● 資料來源：{{
+                                selectedStock.data_source || 'Yahoo Finance' }}</span>
+                        </div>
+
+                        <!-- 輪播控制列 (含暫停/播放按鈕) -->
+                        <div class="carousel-controls">
+                            <button class="btn-secondary" @click="prevDetailStock">上一檔</button>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 0.78rem; color: var(--text-muted);">
+                                    {{ isPaused ? '已暫停輪播' : `自動輪播中 (每 ${settings.marqueeSpeed} 秒)` }}
+                                </span>
+                                <button class="btn-secondary" :class="{ 'btn-pause': !isPaused }" @click="togglePause">
+                                    {{ isPaused ? '播放' : '暫停' }}
+                                </button>
+                            </div>
+                            <button class="btn-secondary" @click="nextDetailStock">下一檔</button>
+                        </div>
+
+                        <button class="btn-secondary" @click="toggleWatchlist(selectedStock.symbol)"
+                            style="margin: 0 0 8px auto; padding: 5px 10px; font-size: 0.78rem;">
+                            {{ isInWatchlist(selectedStock.symbol) ? '− 從自選移除' : '+ 加入自選追蹤' }}
+                        </button>
+
+                        <div class="detail-grid-layout">
+                            <div>
+                                <div class="detail-section">
+                                    <strong>1. 類型與市場：</strong> {{ selectedStock.type }} / {{ selectedStock.market }}
+                                </div>
+
+                                <div class="detail-section">
+                                    <strong>3. 開收盤價：</strong><br>
+                                    開盤: <span style="color:var(--primary); font-weight:600;">${{ selectedStock.open
+                                        }}</span> |
+                                    收盤: <span style="color:var(--primary); font-weight:600;">${{ selectedStock.close
+                                        }}</span> |
+                                    昨收: ${{ selectedStock.previous_close }}
+                                </div>
+
+                                <div class="detail-section">
+                                    <strong>4. 除息紀錄：</strong>
+                                    <div v-if="selectedStock.dividends.length > 0" style="margin-top: 1px;">
+                                        <div v-for="div in selectedStock.dividends" :key="div.date"
+                                            style="font-size: 0.76rem; color: var(--text-muted);">
+                                            • 日期: {{ div.date }} (金額: ${{ div.amount }})
+                                        </div>
+                                    </div>
+                                    <span v-else style="color: var(--text-muted); font-size: 0.76rem;">近期無除息紀錄</span>
+                                </div>
+
+                                <div class="detail-section" style="margin-top: 6px;">
+                                    <strong>2. 歷史資訊摘要 (近一月)：</strong>
+                                    <div class="history-box">
+                                        <div v-for="h in selectedStock.history" :key="h.date"
+                                            style="display: flex; justify-content: space-between; padding: 1px 0; font-size: 0.74rem;">
+                                            <span style="color: var(--text-muted);">{{ h.date }}</span>
+                                            <span style="font-weight: 600;">${{ h.price }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="detail-section"
+                                    style="height: 100%; display: flex; flex-direction: column; margin: 0;">
+                                    <strong>5. 走勢圖表：</strong>
+                                    <div
+                                        style="background: #07090e; padding: 6px; border-radius: 6px; margin-top: 3px; flex-grow: 1; display: flex; align-items: center; border: 1px solid var(--card-border);">
+                                        <canvas id="stockChart1" style="max-height: 150px;"></canvas>
                                     </div>
                                 </div>
                             </div>
@@ -851,7 +943,6 @@
                 const stockSearchResults = ref([]);
                 const isSearchingStocks = ref(false);
                 const hasSearchedStocks = ref(false);
-
                 // 回測相關狀態
                 const backtestSymbols = ref("");
                 const backtestPeriod = ref("1y");
@@ -868,7 +959,7 @@
 
                 const selectedStock = ref(null);
                 const currentDetailSymbol = ref("");
-                let myChart = null;
+                const charts = {};
                 let detailCarouselIdx = 0;
                 let detailCarouselInterval = null;
                 const isPaused = ref(false);
@@ -1082,7 +1173,9 @@
                     try {
                         selectedStock.value = await (await desktopApi()).stock_detail(clean);
                         nextTick(() => {
-                            renderChart(selectedStock.value.chart);
+                            // 依據當前啟用的畫面或同時渲染兩邊的 canvas
+                            renderChart(selectedStock.value.chart, "stockChart");
+                            renderChart(selectedStock.value.chart, "stockChart1");
                         });
                     } catch (e) {
                         showToast('無法取得詳細資訊', 'error');
@@ -1101,13 +1194,16 @@
                     selectStock(watchSymbolsList.value[detailCarouselIdx]);
                 };
 
-                const renderChart = (chartData) => {
-                    const ctx = document.getElementById('stockChart');
+                const renderChart = (chartData, canvasId = 'stockChart') => {
+                    const ctx = document.getElementById(canvasId);
                     if (!ctx) return;
-                    if (myChart) {
-                        myChart.destroy();
+
+                    // 針對該 canvas 獨立進行銷毀與重建
+                    if (charts[canvasId]) {
+                        charts[canvasId].destroy();
                     }
-                    myChart = new Chart(ctx, {
+
+                    charts[canvasId] = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: chartData.labels,
