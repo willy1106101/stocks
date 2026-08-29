@@ -21,7 +21,7 @@ from urllib.request import Request, urlopen
 
 
 # Change this before releasing the application, e.g. "willy/stocks".
-GITHUB_REPOSITORY = "YOUR_GITHUB_USERNAME/YOUR_REPOSITORY"
+GITHUB_REPOSITORY = "willy1106101/stocks"
 APPLICATION_NAME = "willyStocks.exe"
 VERSION_FILENAME = "version.json"
 GITHUB_API = "https://api.github.com/repos/{repository}/releases/latest"
