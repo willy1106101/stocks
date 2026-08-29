@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('dashboard.html', '.'), ('market_room.db', '.'), ('version.json', '.')]
+datas = [('dashboard.html', '.'), ('version.json', '.'), ('market_room.db', '.')]
 binaries = []
 hiddenimports = ['yfinance', 'twstock', 'pandas']
 tmp_ret = collect_all('twstock')
