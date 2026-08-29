@@ -28,7 +28,6 @@ jobs:
 
       - name: 打包主程式與更新程式
         run: |
-          # 假設你的主程式進入點是 main.py，請依實際情況修改檔案名稱
           pyinstaller --noconsole --onefile --name="willyStocks" --icon="favicon.ico" --hidden-import=yfinance --hidden-import=twstock --hidden-import=pandas --hidden-import=webview --collect-all twstock --collect-all webview --add-data "dashboard.html;." --add-data "version.json;." desktop_app.py
           pyinstaller --noconsole --onefile --name="update" --icon="favicon.ico" update.py
 
@@ -46,5 +45,6 @@ jobs:
             dist/willyStocks.exe
             dist/willyStocks.exe.sha256
             dist/update.exe
+            version.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
