@@ -158,6 +158,26 @@ def release_asset(release: dict, name: str) -> dict | None:
     return next((asset for asset in release.get("assets", []) if asset.get("name") == name), None)
 
 
+def replace_when_unlocked(source: Path, target: Path, progress: UpdateProgress | None = None) -> None:
+    """Replace the EXE after Windows releases the old process file lock."""
+    deadline = time.monotonic() + 30
+    waiting_message_shown = False
+    while time.monotonic() < deadline:
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError:
+            if not waiting_message_shown:
+                message = "正在等待股票工具完全關閉…"
+                if progress:
+                    progress.set_message(message)
+                else:
+                    print(message)
+                waiting_message_shown = True
+            time.sleep(0.5)
+    raise RuntimeError("無法取代執行檔。請完全關閉股票工具後再更新。")
+
+
 def update(target: Path, check_only: bool = False, progress: UpdateProgress | None = None) -> int:
     if GITHUB_REPOSITORY.startswith("YOUR_GITHUB_"):
         message = "請先在 update.py 設定 GITHUB_REPOSITORY，例如：your-account/your-repository"
@@ -212,13 +232,11 @@ def update(target: Path, check_only: bool = False, progress: UpdateProgress | No
     try:
         if progress:
             progress.set_message("正在安裝新版…")
-        os.replace(temporary_file, target)
+        replace_when_unlocked(temporary_file, target, progress)
         (directory / VERSION_FILENAME).write_text(
             json.dumps({"version": latest_version}, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
-    except PermissionError as error:
-        raise RuntimeError("無法取代執行檔。請先完全關閉股票工具後再執行更新。") from error
     finally:
         temporary_file.unlink(missing_ok=True)
 

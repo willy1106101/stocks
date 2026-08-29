@@ -5,5 +5,5 @@ pyinstaller --noconsole --onefile --name="willyStocks" --icon="favicon.ico" --hi
 
 pyinstaller --noconsole --onefile --name="update" --icon="favicon.ico" update.py
 
-git tag v1.0.1
-git push origin v1.0.1
+git tag v1.0.2
+git push origin v1.0.2
