@@ -1,0 +1,22 @@
+# Python virtual environments and generated caches
+env/
+__pycache__/
+*.py[cod]
+
+# PyInstaller build artifacts
+build/
+dist/
+*.spec.bak
+
+# Local user data.  This database can contain watchlists and FinMind tokens.
+market_room.db
+
+# Updater downloads and temporary replacement files
+*.new
+*.sha256
+
+# Editor and operating-system files
+.vscode/
+.idea/
+*.log
+Thumbs.db

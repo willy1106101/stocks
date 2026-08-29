@@ -1,0 +1,8 @@
+fastapi 
+yfinance
+twstock
+finmind
+requests
+pywebview
+pystray 
+pillow

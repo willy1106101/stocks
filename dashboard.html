@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <title>股票工具</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #07090e;
+            --card-bg: #111622;
+            --card-border: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --header-bg: #0d121d;
+        }
+
+        /* 鎖定頁面高度，絕對禁止滑動 */
+        html,
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 頂部導航列 */
+        .navbar {
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--card-border);
+            height: 55px;
+            padding: 0 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+        }
+
+        .nav-brand {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-brand span {
+            color: var(--primary);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-tab-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 5px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .nav-tab-btn:hover {
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .nav-tab-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        /* 主容器填滿剩餘高度 */
+        .container {
+            max-width: 1400px;
+            height: calc(100vh - 55px);
+            margin: 0 auto;
+            padding: 15px 25px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 4px solid var(--primary);
+            padding-left: 8px;
+            color: #e2e8f0;
+            margin-bottom: 8px;
+        }
+
+        /* 上方全市場總覽網格 */
+        .marquee-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        /* 主畫面左右雙欄佈局 */
+        .main-dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.35fr;
+            gap: 20px;
+            flex-grow: 1;
+            min-height: 0;
+        }
+
+        /* 左側自選股卡片均分容器 */
+        .card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 10px 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .card:hover,
+        .card.active-card {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            box-shadow: 0 6px 10px -2px rgba(37, 99, 235, 0.2);
+        }
+
+        .card h3 {
+            margin: 0 0 2px 0;
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        .price {
+            font-size: 1.35rem;
+            margin: 2px 0;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .stock-change {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* 右側常駐詳情輪播看板 */
+        .detail-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 18px 22px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            box-sizing: border-box;
+            min-height: 0;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .detail-header h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.1rem;
+        }
+
+        .detail-grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+            gap: 15px;
+            align-items: center;
+            min-height: 0;
+            flex-grow: 1;
+        }
+
+        .detail-section {
+            margin-bottom: 8px;
+            font-size: 0.84rem;
+            line-height: 1.35;
+        }
+
+        .history-box {
+            max-height: 110px;
+            overflow-x: hidden;
+            overflow-y: scroll;
+            background: #07090e;
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+        }
+
+        .carousel-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #07090e;
+            padding: 6px 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid var(--card-border);
+        }
+
+        .input-group {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .input-group input {
+            padding: 10px 14px;
+            background: #07090e;
+            border: 1px solid var(--card-border);
+            color: white;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            width: 220px;
+        }
+
+        .btn-primary {
+            padding: 8px 18px;
+            background: var(--primary);
+            border: none;
+            color: white;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            padding: 4px 10px;
+            background: #1e293b;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.78rem;
+        }
+
+        .btn-secondary:hover {
+            background: #334155;
+        }
+
+        .btn-pause {
+            background: #b91c1c;
+            border-color: #dc2626;
+        }
+
+        .btn-pause:hover {
+            background: #991b1b;
+        }
+
+        /* 通用彈窗與表格 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 25px;
+            border-radius: 14px;
+            width: 440px;
+            max-width: 95vw;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.2rem;
+        }
+
+        .modal-close {
+            padding: 6px 14px;
+            background: #334155;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .table-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 15px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .overlap-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .overlap-table th,
+        .overlap-table td {
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .overlap-table th {
+            background: #161e2e;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            position: sticky;
+            top: 0;
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+        }
+
+        .setting-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .setting-group input,
+        .setting-group select {
+            width: 100%;
+            padding: 8px 12px;
+            background: #07090e;
+            border: 1px solid var(--card-border);
+            color: white;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 20000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            padding: 12px 18px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.88rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        .toast-error {
+            background: #dc2626;
+            border-left: 4px solid #f87171;
+        }
+
+        .toast-success {
+            background: #059669;
+            border-left: 4px solid #34d399;
+        }
+
+        .toast-info {
+            background: #2563eb;
+            border-left: 4px solid #60a5fa;
+        }
+
+        .text-up {
+            color: var(--accent-red) !important;
+        }
+
+        .text-down {
+            color: var(--accent-green) !important;
+        }
+
+        .text-flat {
+            color: var(--text-muted) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- 頂部導航列 -->
+        <div class="navbar">
+            <div class="nav-brand">
+                <span>FINANCIAL</span> TERMINAL
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab-btn" :class="{ active: currentTab === 'room' }" @click="currentTab = 'room'">
+                    市場戰情室
+                </button>
+                <button class="nav-tab-btn" :class="{ active: currentTab === 'etf' }" @click="currentTab = 'etf'">
+                    成分股析工具
+                </button>
+                <button class="nav-tab-btn" :class="{ active: currentTab === 'backtest' }"
+                    @click="currentTab = 'backtest'">
+                    歷史回測與績效比較
+                </button>
+                <button class="nav-tab-btn" :class="{ active: currentTab === 'fundamentals' }"
+                    @click="currentTab = 'fundamentals'; fetchFundamentals()">
+                    財報基本面快篩
+                </button>
+            </div>
+
+            <div>
+                <button class="btn-secondary" @click="showSettingsModal = true" style="padding: 5px 12px;">
+                    系統設定
+                </button>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- 畫面一：市場戰情室 -->
+            <div v-show="currentTab === 'room'"
+                style="height: 100%; display: flex; flex-direction: column; min-height: 0;">
+                <!-- 上方：全市場即時總覽 -->
+                <div class="section-title">全市場即時總覽 (自動輪播)</div>
+                <div class="input-group" style="margin-bottom: 10px; gap: 8px;">
+                    <input v-model="stockSearchQuery" @keyup.enter="searchStocks" placeholder="搜尋股票或 ETF 代號、名稱，例如：2330、台積電"
+                        style="width: min(420px, 100%); padding: 8px 12px;">
+                    <button class="btn-primary" @click="searchStocks" :disabled="isSearchingStocks">
+                        {{ isSearchingStocks ? '搜尋中...' : '搜尋' }}
+                    </button>
+                </div>
+                <div v-if="stockSearchResults.length" class="marquee-grid" style="margin-bottom: 10px;">
+                    <div class="card" v-for="stock in stockSearchResults" :key="stock.symbol"
+                        @click="selectStock(stock.symbol)" style="flex: none; padding: 9px;">
+                        <h3>{{ stock.name }} <span style="font-size: 0.72rem; color: #64748b;">({{ stock.symbol }})</span></h3>
+                        <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">{{ stock.type }}</div>
+                        <button class="btn-secondary" @click.stop="toggleWatchlist(stock.symbol)"
+                            style="width: 100%; margin-top: 7px; padding: 4px 8px; font-size: 0.75rem;">
+                            {{ isInWatchlist(stock.symbol) ? '− 移除自選' : '+ 加入自選' }}
+                        </button>
+                    </div>
+                </div>
+                <div v-else-if="hasSearchedStocks" style="font-size: 0.82rem; color: var(--text-muted); margin: -3px 0 10px;">
+                    找不到符合的台股或 ETF。
+                </div>
+                <div class="marquee-grid">
+                    <div class="card" v-for="stock in marqueeStocks" :key="stock.symbol"
+                        @click="selectStock(stock.symbol)" style="flex: none; padding: 10px;">
+                        <h3>{{ stock.name }} <span style="font-size: 0.72rem; color: #64748b;">({{ stock.symbol
+                                }})</span></h3>
+                        <div class="price" style="font-size: 1.25rem;">${{ stock.price }}</div>
+                        <div class="stock-change" style="font-size: 0.78rem;"
+                            :class="{'text-up': stock.change > 0, 'text-down': stock.change < 0, 'text-flat': stock.change === 0}">
+                            {{ stock.change > 0 ? '+' : '' }}{{ stock.change }} ({{ stock.percent }}%)
+                        </div>
+                        <button class="btn-secondary" @click.stop="toggleWatchlist(stock.symbol)"
+                            style="width: 100%; margin-top: 7px; padding: 4px 8px; font-size: 0.75rem;">
+                            {{ isInWatchlist(stock.symbol) ? '− 移除自選' : '+ 加入自選' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 主畫面左右雙欄 -->
+                <div class="main-dashboard-grid">
+                    <!-- 左邊：即時監控與動態追蹤 (自選股清單) -->
+                    <div style="display: flex; flex-direction: column; min-height: 0;">
+                        <div class="section-title" style="border-left-color: var(--accent-green);">即時監控與動態追蹤 (點擊卡片鎖定)
+                        </div>
+                        <div class="card-list">
+                            <div class="card" v-for="stock in watchQuotes" :key="stock.symbol"
+                                :class="{ 'active-card': currentDetailSymbol === stock.symbol }"
+                                @click="selectStock(stock.symbol)">
+                                <h3>{{ stock.name }} <span style="font-size: 0.78rem; color: #64748b;">({{ stock.symbol
+                                        }})</span></h3>
+                                <div class="price" style="font-size: 1.35rem;">${{ stock.price }}</div>
+                                <div class="stock-change"
+                                    :class="{'text-up': stock.change > 0, 'text-down': stock.change < 0, 'text-flat': stock.change === 0}">
+                                    {{ stock.change > 0 ? '+' : '' }}{{ stock.change }} ({{ stock.percent }}%)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右邊：即時監控與動態追蹤詳細資訊輪播看板 -->
+                    <div style="display: flex; flex-direction: column; min-height: 0;">
+                        <div class="section-title" style="border-left-color: #3b82f6;">詳細資訊輪播看板</div>
+                        <div class="detail-panel" v-if="selectedStock">
+                            <div class="detail-header">
+                                <h2>{{ selectedStock.name }} ({{ selectedStock.symbol }})</h2>
+                                <span style="font-size: 0.78rem; color: var(--accent-green);">● 資料來源：{{ selectedStock.data_source || 'Yahoo Finance' }}</span>
+                            </div>
+
+                            <!-- 輪播控制列 (含暫停/播放按鈕) -->
+                            <div class="carousel-controls">
+                                <button class="btn-secondary" @click="prevDetailStock">上一檔</button>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 0.78rem; color: var(--text-muted);">
+                                        {{ isPaused ? '已暫停輪播' : `自動輪播中 (每 ${settings.marqueeSpeed} 秒)` }}
+                                    </span>
+                                    <button class="btn-secondary" :class="{ 'btn-pause': !isPaused }"
+                                        @click="togglePause">
+                                        {{ isPaused ? '播放' : '暫停' }}
+                                    </button>
+                                </div>
+                                <button class="btn-secondary" @click="nextDetailStock">下一檔</button>
+                            </div>
+
+                            <button class="btn-secondary" @click="toggleWatchlist(selectedStock.symbol)"
+                                style="margin: 0 0 8px auto; padding: 5px 10px; font-size: 0.78rem;">
+                                {{ isInWatchlist(selectedStock.symbol) ? '− 從自選移除' : '+ 加入自選追蹤' }}
+                            </button>
+
+                            <div class="detail-grid-layout">
+                                <div>
+                                    <div class="detail-section">
+                                        <strong>1. 類型與市場：</strong> {{ selectedStock.type }} / {{ selectedStock.market }}
+                                    </div>
+
+                                    <div class="detail-section">
+                                        <strong>3. 開收盤價：</strong><br>
+                                        開盤: <span style="color:var(--primary); font-weight:600;">${{ selectedStock.open
+                                            }}</span> |
+                                        收盤: <span style="color:var(--primary); font-weight:600;">${{ selectedStock.close
+                                            }}</span> |
+                                        昨收: ${{ selectedStock.previous_close }}
+                                    </div>
+
+                                    <div class="detail-section">
+                                        <strong>4. 除息紀錄：</strong>
+                                        <div v-if="selectedStock.dividends.length > 0" style="margin-top: 1px;">
+                                            <div v-for="div in selectedStock.dividends" :key="div.date"
+                                                style="font-size: 0.76rem; color: var(--text-muted);">
+                                                • 日期: {{ div.date }} (金額: ${{ div.amount }})
+                                            </div>
+                                        </div>
+                                        <span v-else
+                                            style="color: var(--text-muted); font-size: 0.76rem;">近期無除息紀錄</span>
+                                    </div>
+
+                                    <div class="detail-section" style="margin-top: 6px;">
+                                        <strong>2. 歷史資訊摘要 (近一月)：</strong>
+                                        <div class="history-box">
+                                            <div v-for="h in selectedStock.history" :key="h.date"
+                                                style="display: flex; justify-content: space-between; padding: 1px 0; font-size: 0.74rem;">
+                                                <span style="color: var(--text-muted);">{{ h.date }}</span>
+                                                <span style="font-weight: 600;">${{ h.price }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="detail-section"
+                                        style="height: 100%; display: flex; flex-direction: column; margin: 0;">
+                                        <strong>5. 走勢圖表：</strong>
+                                        <div
+                                            style="background: #07090e; padding: 6px; border-radius: 6px; margin-top: 3px; flex-grow: 1; display: flex; align-items: center; border: 1px solid var(--card-border);">
+                                            <canvas id="stockChart" style="max-height: 150px;"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 畫面二：ETF 成分分析工具 -->
+            <div v-show="currentTab === 'etf'" style="height: 100%; overflow-y: auto;">
+                <div class="section-title">ETF 成分股交集與重疊分析工具</div>
+                <p style="color: var(--text-muted); margin-top: 6px; font-size: 0.9rem;">請於下方輸入欲進行比較與交集分析的兩檔 ETF
+                    代號，系統將自動抓取並列出共同持股與權重。</p>
+
+                <div class="input-group" style="margin-top: 15px; flex-wrap: wrap; gap: 12px; width: 100%;">
+                    <div>
+                        <label style="display:block; font-size:0.8rem; color:var(--text-muted); margin-bottom:4px;">第一檔
+                            ETF</label>
+                        <input v-model="etf1" placeholder="例: 0050" style="width: 200px; padding: 8px 12px;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.8rem; color:var(--text-muted); margin-bottom:4px;">第二檔
+                            ETF</label>
+                        <input v-model="etf2" placeholder="例: 00878" style="width: 200px; padding: 8px 12px;">
+                    </div>
+                    <div style="align-self: flex-end;">
+                        <button class="btn-primary" @click="fetchOverlap" :disabled="isAnalyzing">
+                            {{ isAnalyzing ? '正在運算分析中...' : '開始分析重疊度' }}
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="hasAnalyzed" style="margin-top: 20px;">
+                    <div class="section-title" style="border-left-color: var(--accent-green);">分析結果：{{ activeEtf1 }} vs
+                        {{ activeEtf2 }}</div>
+                    <div class="table-container">
+                        <table class="overlap-table">
+                            <thead>
+                                <tr>
+                                    <th>代碼</th>
+                                    <th>名稱</th>
+                                    <th>{{ activeEtf1 }} 權重 (%)</th>
+                                    <th>{{ activeEtf2 }} 權重 (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in overlapData" :key="item.symbol">
+                                    <td style="font-weight: 600; color: var(--primary);">{{ item.symbol }}</td>
+                                    <td style="font-weight: 600;">{{ item.name }}</td>
+                                    <td>{{ item['weight_' + activeEtf1] }}%</td>
+                                    <td>{{ item['weight_' + activeEtf2] }}%</td>
+                                </tr>
+                                <tr v-if="overlapData.length === 0">
+                                    <td colspan="4"
+                                        style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                        尚無重疊成分股資料或輸入代號有誤</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 畫面三：歷史回測與績效比較工具 -->
+            <div v-show="currentTab === 'backtest'" style="height: 100%; overflow-y: auto; padding-right: 10px;">
+                <div class="section-title">自選股歷史回測與績效比較工具</div>
+                <p style="color: var(--text-muted); margin-top: 6px; font-size: 0.9rem;">
+                    系統會自動帶入您在系統設定中儲存的自選追蹤代碼清單，您也可以直接修改並選擇回測時間範圍。</p>
+
+                <div class="input-group" style="margin-top: 15px; flex-wrap: wrap; gap: 12px; width: 100%;">
+                    <div>
+                        <label
+                            style="display:block; font-size:0.8rem; color:var(--text-muted); margin-bottom:4px;">比較代號清單</label>
+                        <input v-model="backtestSymbols" placeholder="例: 0050,00878,2330"
+                            style="width: 280px; padding: 8px 12px;">
+                    </div>
+                    <div>
+                        <label
+                            style="display:block; font-size:0.8rem; color:var(--text-muted); margin-bottom:4px;">回測期間</label>
+                        <select v-model="backtestPeriod"
+                            style="width: 140px; padding: 8px 12px; background: #07090e; border: 1px solid var(--card-border); color: white; border-radius: 6px;">
+                            <option value="1y">近 1 年</option>
+                            <option value="3y">近 3 年</option>
+                            <option value="5y">近 5 年</option>
+                        </select>
+                    </div>
+                    <div style="align-self: flex-end;">
+                        <button class="btn-primary" @click="runBacktest" :disabled="isBacktesting">
+                            {{ isBacktesting ? '正在運算回測中...' : '開始歷史回測' }}
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="hasBacktested" style="margin-top: 20px;">
+                    <div class="section-title" style="border-left-color: var(--accent-green);">回測績效走勢比較</div>
+                    <div
+                        style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 20px; border-radius: 12px; height: 380px; display: flex; align-items: center; justify-content: center;">
+                        <canvas id="backtestChart" style="max-height: 340px; width: 100%;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 畫面四：財報基本面快篩 -->
+            <div v-show="currentTab === 'fundamentals'" style="height: 100%; overflow-y: auto; padding-right: 10px;">
+                <div class="section-title">自選股財報與基本面快篩</div>
+                <p style="color: var(--text-muted); margin-top: 6px; font-size: 0.9rem;">
+                    系統會自動載入您在系統設定中儲存的自選股清單，並即時抓取本益比、殖利率與營收成長率。</p>
+
+                <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+                    <button class="btn-primary" @click="fetchFundamentals" :disabled="isLoadingFundamentals">
+                        {{ isLoadingFundamentals ? '正在載入基本面數據...' : '重新整理基本面數據' }}
+                    </button>
+                </div>
+
+                <div class="table-container" style="margin-top: 15px;">
+                    <table class="overlap-table">
+                        <thead>
+                            <tr>
+                                <th>代碼</th>
+                                <th>名稱</th>
+                                <th>本益比 (P/E)</th>
+                                <th>股價淨值比 (P/B)</th>
+                                <th>預估殖利率</th>
+                                <th>市值</th>
+                                <th>營收年增率 (YoY)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in fundamentalData" :key="item.symbol">
+                                <td style="font-weight: 600; color: var(--primary);">{{ item.symbol }}</td>
+                                <td style="font-weight: 600;">{{ item.name }}</td>
+                                <td>{{ item.peRatio }}</td>
+                                <td>{{ item.pbRatio }}</td>
+                                <td style="color: var(--accent-green); font-weight: 600;">{{ item.dividendYield }}</td>
+                                <td>{{ item.marketCap }}</td>
+                                <td
+                                    :class="{'text-up': parseFloat(item.revenueGrowth) > 0, 'text-down': parseFloat(item.revenueGrowth) < 0}">
+                                    {{ item.revenueGrowth }}
+                                </td>
+                            </tr>
+                            <tr v-if="fundamentalData.length === 0">
+                                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                    {{ isLoadingFundamentals ? '資料載入中...' : '目前無資料，請先至系統設定確認自選股清單' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 系統設定彈出視窗 -->
+        <div class="modal-overlay" v-if="showSettingsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>系統設定</h2>
+                    <button class="modal-close" @click="showSettingsModal = false">取消</button>
+                </div>
+                <div class="setting-group">
+                    <label>輪播速度 (秒)：</label>
+                    <select v-model.number="settings.marqueeSpeed">
+                        <option :value="10">10 秒 (快速)</option>
+                        <option :value="15">15 秒 (預設)</option>
+                        <option :value="30">30 秒 (緩慢)</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>自選追蹤股票：</label>
+                    <div style="color: var(--text-muted); font-size: 0.82rem; line-height: 1.55;">
+                        請在市場戰情室的股票卡片或詳細資訊面板，按「加入自選追蹤」。
+                        <div v-if="watchSymbolsList.length" style="margin-top: 5px; color: var(--text-main);">
+                            目前追蹤：{{ watchSymbolsList.join('、') }}
+                        </div>
+                        <div v-else style="margin-top: 5px;">目前尚未加入自選股。</div>
+                    </div>
+                </div>
+                <!-- FinMind API Token 設定選項 -->
+                <div class="setting-group">
+                    <label>FinMind API Token：</label>
+                    <input v-model="settings.finmindToken" type="password" placeholder="輸入您的 FinMind API Token (選填)">
+                </div>
+                <button class="btn-primary" @click="saveSettings" style="width: 100%; margin-top: 5px;">
+                    儲存設定並套用
+                </button>
+            </div>
+        </div>
+
+        <!-- 浮動通知 Toast 容器 -->
+        <div class="toast-container">
+            <div v-for="t in toasts" :key="t.id" class="toast" :class="'toast-' + t.type">
+                {{ t.message }}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, nextTick } = Vue;
+
+        // Calls Python directly through pywebview instead of making HTTP
+        // requests to localhost.  Waiting for this event also avoids a race
+        // while the native bridge is being injected at startup.
+        const desktopApi = async () => {
+            if (window.pywebview && window.pywebview.api) return window.pywebview.api;
+            await new Promise(resolve => window.addEventListener('pywebviewready', resolve, { once: true }));
+            return window.pywebview.api;
+        };
+        createApp({
+            setup() {
+                const currentTab = ref('room');
+                const allSymbols = ref([]);
+                const marqueeStocks = ref([]);
+                let marqueeIdx = 0;
+                let marqueeInterval = null;
+                const stockSearchQuery = ref('');
+                const stockSearchResults = ref([]);
+                const isSearchingStocks = ref(false);
+                const hasSearchedStocks = ref(false);
+
+                // 回測相關狀態
+                const backtestSymbols = ref("");
+                const backtestPeriod = ref("1y");
+                const isBacktesting = ref(false);
+                const hasBacktested = ref(false);
+                let backtestChartInstance = null;
+
+                const fundamentalData = ref([]);
+                const isLoadingFundamentals = ref(false);
+
+                const watchSymbolsList = ref([]);
+                const watchQuotes = ref([]);
+                let watchInterval = null;
+
+                const selectedStock = ref(null);
+                const currentDetailSymbol = ref("");
+                let myChart = null;
+                let detailCarouselIdx = 0;
+                let detailCarouselInterval = null;
+                const isPaused = ref(false);
+
+                const etf1 = ref("");
+                const etf2 = ref("");
+                const activeEtf1 = ref("");
+                const activeEtf2 = ref("");
+                const overlapData = ref([]);
+                const isAnalyzing = ref(false);
+                const hasAnalyzed = ref(false);
+
+                const showSettingsModal = ref(false);
+
+                const settings = ref({
+                    marqueeSpeed: 15,
+                    defaultWatchlist: "",
+                    finmindToken: ""
+                });
+
+                const toasts = ref([]);
+                const showToast = (message, type = 'info') => {
+                    const id = Date.now() + Math.random();
+                    toasts.value.push({ id, message, type });
+                    setTimeout(() => {
+                        toasts.value = toasts.value.filter(t => t.id !== id);
+                    }, 3500);
+                };
+
+                const normalizeSymbol = (symbol) => String(symbol || '')
+                    .replace('.TW', '').replace('.TWO', '').trim().toUpperCase();
+
+                const isInWatchlist = (symbol) => watchSymbolsList.value.includes(normalizeSymbol(symbol));
+
+                const saveWatchlist = async (symbols) => {
+                    const normalizedSymbols = [...new Set(symbols.map(normalizeSymbol).filter(Boolean))];
+                    await (await desktopApi()).save_watchlist(normalizedSymbols.join(','));
+                    watchSymbolsList.value = normalizedSymbols;
+                    settings.value.defaultWatchlist = normalizedSymbols.join(',');
+                    backtestSymbols.value = settings.value.defaultWatchlist;
+                    fetchWatchQuotes();
+                    return normalizedSymbols;
+                };
+
+                const toggleWatchlist = async (symbol) => {
+                    const clean = normalizeSymbol(symbol);
+                    if (!clean) return;
+
+                    const exists = isInWatchlist(clean);
+                    const nextSymbols = exists
+                        ? watchSymbolsList.value.filter(item => item !== clean)
+                        : [...watchSymbolsList.value, clean];
+                    try {
+                        const savedSymbols = await saveWatchlist(nextSymbols);
+                        if (exists) {
+                            showToast(`${clean} 已從自選股移除`, 'info');
+                            if (currentDetailSymbol.value === clean) {
+                                if (savedSymbols.length) {
+                                    selectStock(savedSymbols[0]);
+                                } else {
+                                    selectedStock.value = null;
+                                    currentDetailSymbol.value = '';
+                                }
+                            }
+                        } else {
+                            showToast(`${clean} 已加入自選股`, 'success');
+                        }
+                    } catch (e) {
+                        showToast('自選股儲存失敗，請稍後再試', 'error');
+                    }
+                };
+
+                const initMarquee = async () => {
+                    try {
+                        allSymbols.value = await (await desktopApi()).all_stocks();
+                        nextMarquee();
+                    } catch (e) {
+                        showToast('無法取得全市場代碼資料', 'error');
+                    }
+                };
+
+                const searchStocks = async () => {
+                    const keyword = stockSearchQuery.value.trim();
+                    if (!keyword) {
+                        stockSearchResults.value = [];
+                        hasSearchedStocks.value = false;
+                        return;
+                    }
+                    isSearchingStocks.value = true;
+                    try {
+                        stockSearchResults.value = await (await desktopApi()).search_stocks(keyword);
+                        hasSearchedStocks.value = true;
+                    } catch (e) {
+                        showToast('股票搜尋失敗，請稍後再試', 'error');
+                    } finally {
+                        isSearchingStocks.value = false;
+                    }
+                };
+
+                const nextMarquee = async () => {
+                    if (allSymbols.value.length === 0) return;
+                    const batch = allSymbols.value.slice(marqueeIdx, marqueeIdx + 4).join(',');
+                    try {
+                        marqueeStocks.value = await (await desktopApi()).quotes(batch);
+                    } catch (e) { }
+                    marqueeIdx = (marqueeIdx + 4) % allSymbols.value.length;
+                };
+
+                const loadWatchlist = async () => {
+                    try {
+                        const symbols = await (await desktopApi()).watchlist();
+                        if (symbols.length > 0) {
+                            settings.value.defaultWatchlist = symbols.join(',');
+                            // 自動同步帶入回測輸入框
+                            backtestSymbols.value = symbols.join(',');
+                        }
+                    } catch (e) { }
+
+                    // 從後端讀取 FinMind Token 設定[cite: 1]
+                    try {
+                        const tokenData = await (await desktopApi()).setting('finmind_token');
+                        if (tokenData.value) {
+                            settings.value.finmindToken = tokenData.value;
+                        }
+                    } catch (e) { }
+
+                    watchSymbolsList.value = settings.value.defaultWatchlist.split(',').map(normalizeSymbol).filter(Boolean);
+                    fetchWatchQuotes();
+
+                    if (watchSymbolsList.value.length > 0) {
+                        selectStock(watchSymbolsList.value[0]);
+                    }
+                };
+
+                const fetchFundamentals = async () => {
+                    if (!settings.value.defaultWatchlist) return;
+                    isLoadingFundamentals.value = true;
+                    try {
+                        const data = await (await desktopApi()).fundamentals(settings.value.defaultWatchlist);
+                        if (!data.error) {
+                            fundamentalData.value = data;
+                        } else {
+                            showToast(data.error, 'error');
+                        }
+                    } catch (e) {
+                        showToast('無法取得基本面數據', 'error');
+                    } finally {
+                        isLoadingFundamentals.value = false;
+                    }
+                };
+
+                const fetchWatchQuotes = async () => {
+                    if (watchSymbolsList.value.length === 0) return;
+                    try {
+                        watchQuotes.value = await (await desktopApi()).quotes(watchSymbolsList.value.join(','));
+                    } catch (e) { }
+                };
+
+                const restartTimers = () => {
+                    if (marqueeInterval) clearInterval(marqueeInterval);
+                    if (watchInterval) clearInterval(watchInterval);
+                    if (detailCarouselInterval) clearInterval(detailCarouselInterval);
+
+                    marqueeInterval = setInterval(nextMarquee, settings.value.marqueeSpeed * 1000);
+                    watchInterval = setInterval(() => {
+                        fetchWatchQuotes();
+                    }, settings.value.marqueeSpeed * 1000);
+
+                    if (!isPaused.value) {
+                        detailCarouselInterval = setInterval(() => {
+                            nextDetailStock();
+                        }, settings.value.marqueeSpeed * 1000);
+                    }
+                };
+
+                const togglePause = () => {
+                    isPaused.value = !isPaused.value;
+                    if (isPaused.value) {
+                        if (detailCarouselInterval) {
+                            clearInterval(detailCarouselInterval);
+                            detailCarouselInterval = null;
+                        }
+                        showToast('詳細資訊輪播已暫停', 'info');
+                    } else {
+                        restartTimers();
+                        showToast('詳細資訊輪播已恢復', 'success');
+                    }
+                };
+
+                const saveSettings = async () => {
+                    showSettingsModal.value = false;
+                    restartTimers();
+
+                    try {
+                        // 儲存 FinMind Token 至後端資料庫[cite: 1]
+                        await (await desktopApi()).save_setting('finmind_token', settings.value.finmindToken);
+
+                        showToast('系統設定與 FinMind Token 已成功儲存', 'success');
+                    } catch (e) {
+                        showToast('設定儲存發生錯誤', 'error');
+                    }
+                };
+
+                const selectStock = async (symbol) => {
+                    const clean = normalizeSymbol(symbol);
+                    currentDetailSymbol.value = clean;
+
+                    const idx = watchSymbolsList.value.indexOf(clean);
+                    if (idx !== -1) detailCarouselIdx = idx;
+
+                    try {
+                        selectedStock.value = await (await desktopApi()).stock_detail(clean);
+                        nextTick(() => {
+                            renderChart(selectedStock.value.chart);
+                        });
+                    } catch (e) {
+                        showToast('無法取得詳細資訊', 'error');
+                    }
+                };
+
+                const nextDetailStock = () => {
+                    if (watchSymbolsList.value.length === 0) return;
+                    detailCarouselIdx = (detailCarouselIdx + 1) % watchSymbolsList.value.length;
+                    selectStock(watchSymbolsList.value[detailCarouselIdx]);
+                };
+
+                const prevDetailStock = () => {
+                    if (watchSymbolsList.value.length === 0) return;
+                    detailCarouselIdx = (detailCarouselIdx - 1 + watchSymbolsList.value.length) % watchSymbolsList.value.length;
+                    selectStock(watchSymbolsList.value[detailCarouselIdx]);
+                };
+
+                const renderChart = (chartData) => {
+                    const ctx = document.getElementById('stockChart');
+                    if (!ctx) return;
+                    if (myChart) {
+                        myChart.destroy();
+                    }
+                    myChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.labels,
+                            datasets: [{
+                                label: '收盤價',
+                                data: chartData.prices,
+                                borderColor: '#2563eb',
+                                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', font: { size: 8 } }, grid: { color: '#1e293b' } },
+                                y: { ticks: { color: '#94a3b8', font: { size: 8 } }, grid: { color: '#1e293b' } }
+                            }
+                        }
+                    });
+                };
+
+                const fetchOverlap = async () => {
+                    if (!etf1.value.trim() || !etf2.value.trim()) {
+                        showToast('請完整輸入兩檔 ETF 代號', 'error');
+                        return;
+                    }
+                    isAnalyzing.value = true;
+                    overlapData.value = [];
+                    activeEtf1.value = etf1.value.trim();
+                    activeEtf2.value = etf2.value.trim();
+
+                    try {
+                        overlapData.value = await (await desktopApi()).etf_overlap(activeEtf1.value, activeEtf2.value);
+                        hasAnalyzed.value = true;
+
+                        if (overlapData.value.length === 0) {
+                            showToast('找不到重疊成分股或代號有誤', 'error');
+                        } else {
+                            showToast('ETF 分析完成', 'success');
+                        }
+                    } catch (e) {
+                        showToast('ETF 分析過程發生例外錯誤', 'error');
+                    } finally {
+                        isAnalyzing.value = false;
+                    }
+                };
+
+                const runBacktest = async () => {
+                    if (!backtestSymbols.value.trim()) {
+                        showToast('請輸入至少一組比較代號', 'error');
+                        return;
+                    }
+                    isBacktesting.value = true;
+                    hasBacktested.value = false;
+
+                    try {
+                        const data = await (await desktopApi()).backtest(backtestSymbols.value, backtestPeriod.value);
+
+                        if (data.error) {
+                            showToast(data.error, 'error');
+                            return;
+                        }
+
+                        hasBacktested.value = true;
+                        nextTick(() => {
+                            renderBacktestChart(data);
+                        });
+                        showToast('歷史回測運算完成', 'success');
+                    } catch (e) {
+                        showToast('回測過程發生錯誤', 'error');
+                    } finally {
+                        isBacktesting.value = false;
+                    }
+                };
+
+                const renderBacktestChart = (chartData) => {
+                    const ctx = document.getElementById('backtestChart');
+                    if (!ctx) return;
+                    if (backtestChartInstance) {
+                        backtestChartInstance.destroy();
+                    }
+
+                    backtestChartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.labels,
+                            datasets: chartData.datasets
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'top', labels: { color: '#f8fafc' } }
+                            },
+                            scales: {
+                                x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+                                y: { ticks: { color: '#94a3b8', callback: (value) => value + '%' }, grid: { color: '#1e293b' } }
+                            }
+                        }
+                    });
+                };
+
+                onMounted(() => {
+                    initMarquee();
+                    loadWatchlist();
+                    restartTimers();
+                });
+
+                return {
+                    currentTab, marqueeStocks, watchQuotes,
+                    stockSearchQuery, stockSearchResults, isSearchingStocks, hasSearchedStocks, searchStocks,
+                    etf1, etf2, activeEtf1, activeEtf2, overlapData, fetchOverlap, isAnalyzing, hasAnalyzed,
+                    selectedStock, currentDetailSymbol, selectStock, nextDetailStock, prevDetailStock,
+                    isInWatchlist, toggleWatchlist, watchSymbolsList,
+                    isPaused, togglePause, showSettingsModal, settings, saveSettings, toasts,
+                    backtestSymbols, backtestPeriod, isBacktesting, hasBacktested, runBacktest,
+                    fundamentalData, isLoadingFundamentals, fetchFundamentals
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
