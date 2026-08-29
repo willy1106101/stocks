@@ -6,6 +6,7 @@ __pycache__/
 # PyInstaller build artifacts
 build/
 dist/
+willyStocks/
 *.spec.bak
 
 # Local user data.  This database can contain watchlists and FinMind tokens.
