@@ -6,3 +6,4 @@ requests
 pywebview
 pystray 
 pillow
+scikit-learn
