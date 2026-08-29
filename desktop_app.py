@@ -57,7 +57,7 @@ def check_for_update() -> None:
 
         if window and window.create_confirmation_dialog(
             "發現新版",
-            f"目前版本：v{current_version()}\\n最新版本：v{latest_version}\\n\\n是否立即下載並更新？",
+            f"目前版本：v{current_version()}\n最新版本：v{latest_version}\n\n是否立即下載並更新？",
         ):
             subprocess.Popen(command + ["--wait-pid", str(os.getpid())], cwd=str(Path(command[0]).parent))
             os._exit(0)
