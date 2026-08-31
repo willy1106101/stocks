@@ -864,16 +864,21 @@
                         style="border-left-color: var(--accent-green); flex-shrink: 0; margin-bottom: 4px;">回測績效與指標摘要
                     </div>
 
-                    <!-- 緊湊型橫向數據列（取代原本笨重的方塊卡片） -->
-                    <div style="display: flex; gap: 10px; flex-shrink: 0; margin-bottom: 10px; overflow-x: auto;">
+                    <!-- 緊湊型橫向數據列（修正文字換行與擠壓問題） -->
+                    <div style="display: flex; gap: 8px; flex-shrink: 0; margin-bottom: 10px; width: 100%;">
                         <div v-for="(metric, sym) in backtestMetrics" :key="sym"
-                            style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 14px; display: flex; align-items: center; gap: 15px; flex: 1; min-width: 200px;">
+                            style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; flex: 1; white-space: nowrap; overflow: hidden;">
                             <span
-                                style="font-weight: 800; font-size: 0.95rem; color: var(--primary); min-width: 45px;">{{
+                                style="font-weight: 800; font-size: 0.9rem; color: var(--primary); margin-right: 8px;">{{
                                 sym }}</span>
-                            <div
-                                style="display: flex; gap: 12px; font-size: 0.78rem; flex-grow: 1; justify-content: space-around;">
-
+                            <div style="display: flex; gap: 10px; font-size: 0.75rem;">
+                                <div>
+                                    <span style="color: var(--text-muted);">總報酬:</span>
+                                    <span :class="metric.total_return >= 0 ? 'text-up' : 'text-down'"
+                                        style="font-weight: 700;">
+                                        {{ metric.total_return > 0 ? '+' : '' }}{{ metric.total_return }}%
+                                    </span>
+                                </div>
                                 <div>
                                     <span style="color: var(--text-muted);">MDD:</span>
                                     <span style="color: var(--accent-red); font-weight: 700;">{{ metric.max_drawdown
@@ -882,13 +887,6 @@
                                 <div>
                                     <span style="color: var(--text-muted);">Sharpe:</span>
                                     <span style="color: #60a5fa; font-weight: 700;">{{ metric.sharpe_ratio }}</span>
-                                </div>
-                                <div>
-                                    <span style="color: var(--text-muted);">總報酬:</span>
-                                    <span :class="metric.total_return >= 0 ? 'text-up' : 'text-down'"
-                                        style="font-weight: 700;">
-                                        {{ metric.total_return > 0 ? '+' : '' }}{{ metric.total_return }}%
-                                    </span>
                                 </div>
                             </div>
                         </div>
