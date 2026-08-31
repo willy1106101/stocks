@@ -412,6 +412,41 @@
             outline: none;
         }
 
+        /* 績效指標卡片格線 */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .metric-card h4 {
+            margin: 0 0 6px 0;
+            font-size: 0.95rem;
+            color: #fff;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 4px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            margin-bottom: 3px;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+        }
+
         /* Toast */
         .toast-container {
             position: fixed;
@@ -573,11 +608,11 @@
                             <div class="detail-grid-layout">
                                 <div>
                                     <div class="detail-section">
-                                        <strong>1. 類型與市場：</strong> {{ selectedStock.type }} / {{ selectedStock.market }}
+                                        <strong>類型與市場：</strong> {{ selectedStock.type }} / {{ selectedStock.market }}
                                     </div>
 
                                     <div class="detail-section">
-                                        <strong>3. 開收盤價：</strong><br>
+                                        <strong>開收盤價：</strong><br>
                                         開盤: <span style="color:var(--primary); font-weight:600;">${{ selectedStock.open
                                             }}</span> |
                                         收盤: <span style="color:var(--primary); font-weight:600;">${{ selectedStock.close
@@ -586,7 +621,7 @@
                                     </div>
 
                                     <div class="detail-section">
-                                        <strong>4. 除息紀錄：</strong>
+                                        <strong>除息紀錄：</strong>
                                         <div v-if="selectedStock.dividends.length > 0" style="margin-top: 1px;">
                                             <div v-for="div in selectedStock.dividends" :key="div.date"
                                                 style="font-size: 0.76rem; color: var(--text-muted);">
@@ -598,9 +633,9 @@
                                     </div>
 
                                     <div class="detail-section" style="margin-top: 6px;">
-                                        <strong>2. 歷史資訊摘要 (近一月)：</strong>
+                                        <strong>歷史資訊摘要 (近一月)：</strong>
                                         <div class="history-box">
-                                            <div v-for="h in selectedStock.history" :key="h.date"
+                                            <div v-for="h in [...selectedStock.history].reverse()" :key="h.date"
                                                 style="display: flex; justify-content: space-between; padding: 1px 0; font-size: 0.74rem;">
                                                 <span style="color: var(--text-muted);">{{ h.date }}</span>
                                                 <span style="font-weight: 600;">${{ h.price }}</span>
@@ -612,7 +647,7 @@
                                 <div>
                                     <div class="detail-section"
                                         style="height: 100%; display: flex; flex-direction: column; margin: 0;">
-                                        <strong>5. 走勢圖表：</strong>
+                                        <strong>走勢圖表：</strong>
                                         <div
                                             style="background: #07090e; padding: 6px; border-radius: 6px; margin-top: 3px; flex-grow: 1; display: flex; align-items: center; border: 1px solid var(--card-border);">
                                             <canvas id="stockChart" style="max-height: 150px;"></canvas>
@@ -683,11 +718,11 @@
                         <div class="detail-grid-layout">
                             <div>
                                 <div class="detail-section">
-                                    <strong>1. 類型與市場：</strong> {{ selectedStock.type }} / {{ selectedStock.market }}
+                                    <strong>類型與市場：</strong> {{ selectedStock.type }} / {{ selectedStock.market }}
                                 </div>
 
                                 <div class="detail-section">
-                                    <strong>3. 開收盤價：</strong><br>
+                                    <strong>開收盤價：</strong><br>
                                     開盤: <span style="color:var(--primary); font-weight:600;">${{ selectedStock.open
                                         }}</span> |
                                     收盤: <span style="color:var(--primary); font-weight:600;">${{ selectedStock.close
@@ -696,7 +731,7 @@
                                 </div>
 
                                 <div class="detail-section">
-                                    <strong>4. 除息紀錄：</strong>
+                                    <strong>除息紀錄：</strong>
                                     <div v-if="selectedStock.dividends.length > 0" style="margin-top: 1px;">
                                         <div v-for="div in selectedStock.dividends" :key="div.date"
                                             style="font-size: 0.76rem; color: var(--text-muted);">
@@ -707,9 +742,9 @@
                                 </div>
 
                                 <div class="detail-section" style="margin-top: 6px;">
-                                    <strong>2. 歷史資訊摘要 (近一月)：</strong>
+                                    <strong>歷史資訊摘要 (近一月)：</strong>
                                     <div class="history-box">
-                                        <div v-for="h in selectedStock.history" :key="h.date"
+                                        <div v-for="h in [...selectedStock.history].reverse()" :key="h.date"
                                             style="display: flex; justify-content: space-between; padding: 1px 0; font-size: 0.74rem;">
                                             <span style="color: var(--text-muted);">{{ h.date }}</span>
                                             <span style="font-weight: 600;">${{ h.price }}</span>
@@ -721,7 +756,7 @@
                             <div>
                                 <div class="detail-section"
                                     style="height: 100%; display: flex; flex-direction: column; margin: 0;">
-                                    <strong>5. 走勢圖表：</strong>
+                                    <strong>走勢圖表：</strong>
                                     <div
                                         style="background: #07090e; padding: 6px; border-radius: 6px; margin-top: 3px; flex-grow: 1; display: flex; align-items: center; border: 1px solid var(--card-border);">
                                         <canvas id="stockChart1" style="max-height: 150px;"></canvas>
@@ -789,40 +824,82 @@
             </div>
 
             <!-- 畫面三：歷史回測與績效比較工具 -->
-            <div v-show="currentTab === 'backtest'" style="height: 100%; overflow-y: auto; padding-right: 10px;">
-                <div class="section-title">自選股歷史回測與績效比較工具</div>
-                <p style="color: var(--text-muted); margin-top: 6px; font-size: 0.9rem;">
-                    系統會自動帶入您在系統設定中儲存的自選追蹤代碼清單，您也可以直接修改並選擇回測時間範圍。</p>
+            <div v-show="currentTab === 'backtest'"
+                style="height: 100%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; padding-right: 5px;">
+                <div class="section-title" style="flex-shrink: 0;">自選股歷史回測與績效比較工具</div>
+                <p style="color: var(--text-muted); margin: 4px 0 10px 0; font-size: 0.85rem; flex-shrink: 0;">
+                    系統會自動帶入您在系統設定中儲存的自選追蹤代碼清單，您也可以直接修改並選擇回測時間範圍。
+                </p>
 
-                <div class="input-group" style="margin-top: 15px; flex-wrap: wrap; gap: 12px; width: 100%;">
+                <!-- 輸入控制區塊 -->
+                <div class="input-group"
+                    style="margin-bottom: 10px; padding: 10px 15px; flex-shrink: 0; width: 100%; box-sizing: border-box;">
                     <div>
                         <label
-                            style="display:block; font-size:0.8rem; color:var(--text-muted); margin-bottom:4px;">比較代號清單</label>
+                            style="display:block; font-size:0.78rem; color:var(--text-muted); margin-bottom:2px;">比較代號清單</label>
                         <input v-model="backtestSymbols" placeholder="例: 0050,00878,2330"
-                            style="width: 280px; padding: 8px 12px;">
+                            style="width: 260px; padding: 6px 10px; font-size: 0.88rem;">
                     </div>
                     <div>
                         <label
-                            style="display:block; font-size:0.8rem; color:var(--text-muted); margin-bottom:4px;">回測期間</label>
+                            style="display:block; font-size:0.78rem; color:var(--text-muted); margin-bottom:2px;">回測期間</label>
                         <select v-model="backtestPeriod"
-                            style="width: 140px; padding: 8px 12px; background: #07090e; border: 1px solid var(--card-border); color: white; border-radius: 6px;">
+                            style="width: 130px; padding: 6px 10px; background: #07090e; border: 1px solid var(--card-border); color: white; border-radius: 6px; font-size: 0.88rem;">
                             <option value="1y">近 1 年</option>
                             <option value="3y">近 3 年</option>
                             <option value="5y">近 5 年</option>
                         </select>
                     </div>
                     <div style="align-self: flex-end;">
-                        <button class="btn-primary" @click="runBacktest" :disabled="isBacktesting">
+                        <button class="btn-primary" @click="runBacktest" :disabled="isBacktesting"
+                            style="padding: 6px 16px;">
                             {{ isBacktesting ? '正在運算回測中...' : '開始歷史回測' }}
                         </button>
                     </div>
                 </div>
 
-                <div v-if="hasBacktested" style="margin-top: 20px;">
-                    <div class="section-title" style="border-left-color: var(--accent-green);">回測績效走勢比較</div>
+                <!-- 回測結果區塊 -->
+                <div v-if="hasBacktested" style="display: flex; flex-direction: column; flex-grow: 1; min-height: 0;">
+                    <div class="section-title"
+                        style="border-left-color: var(--accent-green); flex-shrink: 0; margin-bottom: 4px;">回測績效與指標摘要
+                    </div>
+
+                    <!-- 緊湊型橫向數據列（取代原本笨重的方塊卡片） -->
+                    <div style="display: flex; gap: 10px; flex-shrink: 0; margin-bottom: 10px; overflow-x: auto;">
+                        <div v-for="(metric, sym) in backtestMetrics" :key="sym"
+                            style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 14px; display: flex; align-items: center; gap: 15px; flex: 1; min-width: 200px;">
+                            <span
+                                style="font-weight: 800; font-size: 0.95rem; color: var(--primary); min-width: 45px;">{{
+                                sym }}</span>
+                            <div
+                                style="display: flex; gap: 12px; font-size: 0.78rem; flex-grow: 1; justify-content: space-around;">
+
+                                <div>
+                                    <span style="color: var(--text-muted);">MDD:</span>
+                                    <span style="color: var(--accent-red); font-weight: 700;">{{ metric.max_drawdown
+                                        }}%</span>
+                                </div>
+                                <div>
+                                    <span style="color: var(--text-muted);">Sharpe:</span>
+                                    <span style="color: #60a5fa; font-weight: 700;">{{ metric.sharpe_ratio }}</span>
+                                </div>
+                                <div>
+                                    <span style="color: var(--text-muted);">總報酬:</span>
+                                    <span :class="metric.total_return >= 0 ? 'text-up' : 'text-down'"
+                                        style="font-weight: 700;">
+                                        {{ metric.total_return > 0 ? '+' : '' }}{{ metric.total_return }}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 走勢圖表容器 -->
+                    <div class="section-title" style="border-left-color: #3b82f6; flex-shrink: 0; margin-bottom: 4px;">
+                        回測績效走勢比較</div>
                     <div
-                        style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 20px; border-radius: 12px; height: 380px; display: flex; align-items: center; justify-content: center;">
-                        <canvas id="backtestChart" style="max-height: 340px; width: 100%;"></canvas>
+                        style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 10px; border-radius: 12px; flex-grow: 1; min-height: 0; display: flex; align-items: center; justify-content: center; box-sizing: border-box; margin-bottom: 5px;">
+                        <canvas id="backtestChart" style="width: 100%; height: 100%; max-height: 100%;"></canvas>
                     </div>
                 </div>
             </div>
@@ -887,9 +964,10 @@
                 <div class="setting-group">
                     <label>輪播速度 (秒)：</label>
                     <select v-model.number="settings.marqueeSpeed">
-                        <option :value="10">10 秒 (快速)</option>
-                        <option :value="15">15 秒 (預設)</option>
-                        <option :value="30">30 秒 (緩慢)</option>
+                        <option :value="10">10 秒</option>
+                        <option :value="15">15 秒</option>
+                        <option :value="30">30 秒</option>
+                        <option :value="60">60 秒</option>
                     </select>
                 </div>
                 <div class="setting-group">
@@ -948,6 +1026,8 @@
                 const backtestPeriod = ref("1y");
                 const isBacktesting = ref(false);
                 const hasBacktested = ref(false);
+                const backtestMetrics = ref({});
+                const activeMetricSymbol = ref("");
                 let backtestChartInstance = null;
 
                 const fundamentalData = ref([]);
@@ -1081,7 +1161,7 @@
                     // 從後端讀取 FinMind Token 設定[cite: 1]
                     try {
                         const tokenData = await (await desktopApi()).setting('finmind_token');
-                        if (tokenData.value) {
+                        if (tokenData && tokenData.value) {
                             settings.value.finmindToken = tokenData.value;
                         }
                     } catch (e) { }
@@ -1274,6 +1354,9 @@
                         }
 
                         hasBacktested.value = true;
+                        backtestMetrics.value = data.metrics || {};
+                        const symbols = Object.keys(backtestMetrics.value);
+                        if (symbols.length > 0) activeMetricSymbol.value = symbols[0];
                         nextTick(() => {
                             renderBacktestChart(data);
                         });
@@ -1325,7 +1408,7 @@
                     selectedStock, currentDetailSymbol, selectStock, nextDetailStock, prevDetailStock,
                     isInWatchlist, toggleWatchlist, watchSymbolsList,
                     isPaused, togglePause, showSettingsModal, settings, saveSettings, toasts,
-                    backtestSymbols, backtestPeriod, isBacktesting, hasBacktested, runBacktest,
+                    backtestSymbols, backtestPeriod, isBacktesting, hasBacktested, backtestMetrics, runBacktest,
                     fundamentalData, isLoadingFundamentals, fetchFundamentals
                 }
             }

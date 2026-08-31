@@ -59,9 +59,16 @@ def get_backtest_with_indicators(symbols: str, period: str = "1y"):
             drawdown = (series - rolling_max) / rolling_max
             max_drawdown = drawdown.min() * 100
 
+            # 4. 計算年化夏普值 (假設無風險利率為 0，年化交易日約 252 天)
+            daily_returns = series.pct_change().dropna()
+            if daily_returns.std() != 0:
+                # 年化夏普值 = (日報酬均值 / 日報酬標準差) * 根號 252
+                sharpe_ratio = (daily_returns.mean() / daily_returns.std()) * np.sqrt(252)
+            else:
+                sharpe_ratio = 0.0
+
             base_color = colors[i % len(colors)]
 
-            # 將 pandas Series 中的 NaN 替換為 Python 的 None (對應 JSON 的 null)
             clean_returns = [None if pd.isna(x) else round(float(x), 2) for x in returns]
             clean_ma20 = [None if pd.isna(x) else round(float(x), 2) for x in ma20_returns]
 
@@ -89,7 +96,8 @@ def get_backtest_with_indicators(symbols: str, period: str = "1y"):
 
             metrics_summary[sym] = {
                 "total_return": round(float(returns.iloc[-1]), 2),
-                "max_drawdown": round(float(max_drawdown), 2)
+                "max_drawdown": round(float(max_drawdown), 2),
+                "sharpe_ratio": round(float(sharpe_ratio), 2)
             }
 
         return {
@@ -101,5 +109,4 @@ def get_backtest_with_indicators(symbols: str, period: str = "1y"):
         return {"error": str(e)}
 
 
-# 相容舊路由名稱
 get_backtest_data = get_backtest_with_indicators
