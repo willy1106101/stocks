@@ -7,3 +7,4 @@ pywebview
 pystray 
 pillow
 scikit-learn
+PyQt6

@@ -262,6 +262,73 @@ def get_yahoo_stock_detail(symbol: str):
     }
 
 
+def get_twstock_detail(symbol: str):
+    clean_sym = symbol.replace(".TW", "").replace(".TWO", "").strip()
+    
+    stock_info = twstock.codes.get(clean_sym)
+    name = stock_info.name if stock_info else clean_sym
+    stock_type = stock_info.type if stock_info else "股票"
+    market = stock_info.market if stock_info else "未知"
+    
+    history_data = []
+    chart_labels = []
+    chart_prices = []
+    open_price = 0.0
+    close_price = 0.0
+    prev_close = 0.0
+    dividends_info = []  # twstock 無內建股利 API，故維持空陣列
+
+    try:
+        # 1. 透過 twstock 取得即時資料
+        rt_data = twstock.realtime.get(clean_sym)
+        if rt_data and rt_data.get('success'):
+            rt_info = rt_data.get('realtime', {})
+            open_price = safe_float(rt_info.get('open', 0))
+            close_price = safe_float(rt_info.get('latest_trade_price', 0))
+        
+        # 2. 透過 twstock.Stock 取得歷史價量資料（預設當月）
+        stock = twstock.Stock(clean_sym)
+        if stock.price:
+            # 如果 realtime 沒抓到即時價，改用歷史資料最後一筆補齊
+            if close_price == 0.0 and len(stock.price) > 0:
+                close_price = safe_float(stock.price[-1])
+            if open_price == 0.0 and len(stock.open) > 0:
+                open_price = safe_float(stock.open[-1])
+            if len(stock.price) >= 2 and prev_close == 0.0:
+                prev_close = safe_float(stock.price[-2])  # 以倒數第二筆作為前收盤價替代
+                
+            # 組合歷史紀錄與圖表資料
+            dates = stock.date
+            prices = stock.price
+            for d, p in zip(dates, prices):
+                date_str = str(d)[:10]
+                val = safe_float(p)
+                history_data.append({"date": date_str, "price": val})
+                chart_labels.append(date_str)
+                chart_prices.append(val)
+
+    except Exception as e:
+        print("=== STOCK DETAIL ERROR ===")
+        print(traceback.format_exc())
+        return {"error": str(e)}, 500
+
+    return {
+        "symbol": str(clean_sym),
+        "name": str(name),
+        "type": str(stock_type),
+        "market": str(market),
+        "open": open_price,
+        "close": close_price,
+        "previous_close": prev_close,
+        "history": history_data,
+        "dividends": dividends_info,
+        "chart": {
+            "labels": [str(l) for l in chart_labels],
+            "prices": [safe_float(p) for p in chart_prices]
+        },
+        "data_source": "twstock",
+    }
+
 @router.get("/api/stock-detail/{symbol}")
 def get_stock_detail(symbol: str):
     clean_sym = symbol.replace(".TW", "").replace(".TWO", "").strip()
